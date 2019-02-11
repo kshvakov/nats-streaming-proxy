@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -18,6 +19,10 @@ var (
 )
 
 var (
+	uptimeProm = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "nats_streaming_proxy_uptime",
+		Help: "Server uptime in seconds.",
+	})
 	reqProcessedProm = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "nats_streaming_proxy_requests_total",
 		Help: "The total number of processed requests",
@@ -67,7 +72,11 @@ func metrics(addr string) {
 			</body>
 			</html>`))
 	})
-	http.Handle("/metrics", promhttp.Handler())
+	handler := promhttp.Handler()
+	http.Handle("/metrics", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		uptimeProm.Set(time.Since(startTime).Seconds())
+		handler.ServeHTTP(w, r)
+	}))
 	log.Error(http.ListenAndServe(addr, nil))
 
 }

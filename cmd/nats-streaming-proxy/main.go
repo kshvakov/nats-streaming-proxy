@@ -78,7 +78,6 @@ func main() {
 			NatsURL:       c.String("nats-url"),
 			NatsClientID:  c.String("nats-client-id"),
 			NatsClusterID: c.String("nats-cluster-id"),
-			NatsGroup:     c.String("nats-group"),
 			MetricsAddr:   c.String("metrics-addr"),
 			ServerAddr:    c.String("server-addr"),
 		})

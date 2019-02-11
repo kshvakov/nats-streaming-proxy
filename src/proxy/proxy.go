@@ -11,13 +11,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const version = "1.0.1"
+
 type Options struct {
 	ServerAddr    string
 	MetricsAddr   string
 	NatsClusterID string
 	NatsClientID  string
 	NatsURL       string
-	NatsGroup     string
 }
 
 // New NATS Steaming proxy
@@ -39,7 +40,7 @@ func New(options Options) (_ *Proxy, err error) {
 	if proxy.natsConn, err = nats.Connect(options.NatsClusterID, options.NatsClientID, connOpts...); err != nil {
 		return nil, err
 	}
-	log.Infof("listen=%s, nats-cluster-id=%s, nats-client-id=%s, nats-group=%s", options.ServerAddr, options.NatsClusterID, options.NatsClientID, options.NatsGroup)
+	log.Infof("listen=%s, nats-cluster-id=%s, nats-client-id=%s", options.ServerAddr, options.NatsClusterID, options.NatsClientID)
 	go metrics(options.MetricsAddr)
 	go proxy.waitSignal()
 	return &proxy, nil
@@ -52,14 +53,13 @@ type Proxy struct {
 }
 
 func (p *Proxy) waitSignal() {
-	signals := make(chan os.Signal)
-	signal.Notify(signals,
+	signal.Notify(p.signals,
 		os.Interrupt,
 		syscall.SIGTERM,
 		syscall.SIGINT,
 	)
 	select {
-	case sig := <-signals:
+	case sig := <-p.signals:
 		log.Infof("shutdown [%s]", sig)
 		p.natsConn.Close()
 		{

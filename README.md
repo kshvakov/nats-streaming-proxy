@@ -1,12 +1,18 @@
 # nats-streaming-proxy
-Write to the NATS Streaming via Memcached protocol
+Write to the NATS Streaming via Memcached protocol.
 
-Example
+### PHP example
 
 ```php
 <?php
 $mem = new Memcached('nats-streaming-pool');
-$mem->addServer('10.112.179.191', 11211);
+if (count($mem->getServerList()) == 0) {
+    $mem->addServer("10.112.179.191", 11211);
+    $mem->addServer("10.112.179.192", 11211);
+    // http://php.net/manual/en/memcached.constants.php
+    $mem->setOption(Memcached::OPT_TCP_NODELAY, true);
+    $mem->setOption(Memcached::OPT_COMPRESSION, false);
+}
 $mem->set('subject', json_encode([
     'event_time' => time(),
     'event_type' => 'type',

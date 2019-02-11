@@ -6,24 +6,27 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	nats "github.com/nats-io/go-nats-streaming"
 )
 
 var (
-	crlf    = []byte("\r\n")
-	noreply = []byte("noreply")
+	crlf      = []byte("\r\n")
+	noreply   = []byte("noreply")
+	startTime = time.Now()
 )
 
 var (
 	StatusEnd       = []byte("END\r\n")
 	StatusStored    = []byte("STORED\r\n")
 	StatusNotStored = []byte("NOT_STORED\r\n")
-	StatusVersion   = []byte("VERSION 1.0.0\r\n")
+	StatusVersion   = []byte("VERSION " + version + "\r\n")
 	StatPattern     = "STAT %s %v\r\n"
 )
 
@@ -43,7 +46,7 @@ func (conn *connect) serve() {
 		case err != nil:
 			connectionsDec(address)
 			{
-				conn.net.Close()
+				conn.Close()
 			}
 			return
 		default:
@@ -97,6 +100,11 @@ func (conn *connect) handle() error {
 				reqProcessedInc()
 			}
 		case 't': // stats
+			fmt.Fprintf(conn.buffer, StatPattern, "pid", os.Getpid())
+			fmt.Fprintf(conn.buffer, StatPattern, "time", time.Now().Unix())
+			fmt.Fprintf(conn.buffer, StatPattern, "server", "nats-streaming-proxy")
+			fmt.Fprintf(conn.buffer, StatPattern, "uptime", int64(time.Since(startTime).Seconds()))
+			fmt.Fprintf(conn.buffer, StatPattern, "version", version)
 			fmt.Fprintf(conn.buffer, StatPattern, "num_goroutine", runtime.NumGoroutine())
 			fmt.Fprintf(conn.buffer, StatPattern, "cmd_set", atomic.LoadInt64(&reqProcessed))
 			fmt.Fprintf(conn.buffer, StatPattern, "curr_connections", atomic.LoadInt64(&currentConnections))
@@ -109,4 +117,9 @@ func (conn *connect) handle() error {
 		return io.EOF
 	}
 	return nil
+}
+
+func (conn *connect) Close() error {
+	conn.buffer.Flush()
+	return conn.net.Close()
 }

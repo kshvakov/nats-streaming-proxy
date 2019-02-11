@@ -1,7 +1,7 @@
 name: "nats-streaming-proxy"
 arch: "amd64"
 platform: "linux"
-version: "v1.0.0"
+version: "v1.0.1"
 section: "default"
 priority: "extra"
 maintainer: "Kirill Shvakov <shvakov@gmail.com>"
