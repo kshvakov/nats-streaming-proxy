@@ -1,5 +1,5 @@
 # nats-streaming-proxy
-Write to the NATS Streaming via Memcached protocol.
+Write to the [NATS Streaming](https://nats.io/documentation/streaming/nats-streaming-intro/) via Memcached protocol.
 
 ### PHP example
 

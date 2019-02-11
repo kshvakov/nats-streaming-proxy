@@ -14,14 +14,16 @@ var (
 	GitBranch, GitCommit string
 )
 
+const version = "1.0.2"
+
 func init() {
 	log.SetFormatter(&log.TextFormatter{})
 }
 func main() {
 	app := cli.NewApp()
-	app.Name = "NATS Streaming memcache proxy"
+	app.Name = "NATS Streaming memcached proxy"
 	app.Usage = "."
-	app.Version = fmt.Sprintf("rev[%s] %s (%s UTC).", GitCommit, GitBranch, BuildDate)
+	app.Version = fmt.Sprintf("version[%s] rev[%s] %s (%s UTC).", version, GitCommit, GitBranch, BuildDate)
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:   "nats-url",
@@ -40,6 +42,11 @@ func main() {
 			EnvVar: "NATS_CLUSTER_ID",
 			Value:  "test-cluster",
 			Usage:  "ID of the NATS Streaming cluster.",
+		},
+		cli.BoolFlag{
+			Name:   "nats-publish-async",
+			EnvVar: "NATS_PUBLISH_ASYNC",
+			Usage:  "Publish message to the cluster asynchronously.",
 		},
 		cli.StringFlag{
 			Name:   "log-level",
@@ -74,12 +81,13 @@ func main() {
 				log.SetLevel(level)
 			}
 		}
-		proxy, err := proxy.New(proxy.Options{
-			NatsURL:       c.String("nats-url"),
-			NatsClientID:  c.String("nats-client-id"),
-			NatsClusterID: c.String("nats-cluster-id"),
-			MetricsAddr:   c.String("metrics-addr"),
-			ServerAddr:    c.String("server-addr"),
+		proxy, err := proxy.New(version, proxy.Options{
+			NatsURL:          c.String("nats-url"),
+			NatsClientID:     c.String("nats-client-id"),
+			NatsClusterID:    c.String("nats-cluster-id"),
+			NatsPublishAsync: c.Bool("nats-publish-async"),
+			MetricsAddr:      c.String("metrics-addr"),
+			ServerAddr:       c.String("server-addr"),
 		})
 		if err != nil {
 			return err

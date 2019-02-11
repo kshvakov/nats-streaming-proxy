@@ -26,13 +26,14 @@ var (
 	StatusEnd       = []byte("END\r\n")
 	StatusStored    = []byte("STORED\r\n")
 	StatusNotStored = []byte("NOT_STORED\r\n")
-	StatusVersion   = []byte("VERSION " + version + "\r\n")
 	StatPattern     = "STAT %s %v\r\n"
 )
 
 type connect struct {
 	net      net.Conn
+	version  string
 	buffer   *bufio.ReadWriter
+	publish  func(string, []byte) error
 	natsConn nats.Conn
 }
 
@@ -41,13 +42,13 @@ func (conn *connect) serve() {
 	{
 		connectionsInc(address)
 	}
+	defer func() {
+		connectionsDec(address)
+		conn.Close()
+	}()
 	for {
 		switch err := conn.handle(); {
 		case err != nil:
-			connectionsDec(address)
-			{
-				conn.Close()
-			}
 			return
 		default:
 			if err := conn.buffer.Flush(); err != nil {
@@ -92,7 +93,7 @@ func (conn *connect) handle() error {
 			if !bytes.HasSuffix(value, crlf) {
 				return err
 			}
-			switch err := conn.natsConn.Publish(subject, value[:n]); {
+			switch err := conn.publish(subject, value[:n]); {
 			case err != nil:
 				conn.net.Write(StatusNotStored)
 			default:
@@ -104,7 +105,7 @@ func (conn *connect) handle() error {
 			fmt.Fprintf(conn.buffer, StatPattern, "time", time.Now().Unix())
 			fmt.Fprintf(conn.buffer, StatPattern, "server", "nats-streaming-proxy")
 			fmt.Fprintf(conn.buffer, StatPattern, "uptime", int64(time.Since(startTime).Seconds()))
-			fmt.Fprintf(conn.buffer, StatPattern, "version", version)
+			fmt.Fprintf(conn.buffer, StatPattern, "version", conn.version)
 			fmt.Fprintf(conn.buffer, StatPattern, "num_goroutine", runtime.NumGoroutine())
 			fmt.Fprintf(conn.buffer, StatPattern, "cmd_set", atomic.LoadInt64(&reqProcessed))
 			fmt.Fprintf(conn.buffer, StatPattern, "curr_connections", atomic.LoadInt64(&currentConnections))
@@ -112,7 +113,7 @@ func (conn *connect) handle() error {
 			conn.buffer.Write(StatusEnd)
 		}
 	case 'v': // version
-		conn.net.Write(StatusVersion)
+		conn.net.Write([]byte("VERSION " + conn.version + "\r\n"))
 	default:
 		return io.EOF
 	}
