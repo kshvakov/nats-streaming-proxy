@@ -1,0 +1,22 @@
+name: "nats-streaming-proxy"
+arch: "amd64"
+platform: "linux"
+version: "v1.0.0"
+section: "default"
+priority: "extra"
+maintainer: "Kirill Shvakov <shvakov@gmail.com>"
+description: "NATS Streaming memcache proxy."
+vendor: "Kirill Shvakov"
+homepage: "https://github.com/kshvakov/nats-streaming-proxy"
+license: "MIT"
+bindir: "/usr/bin"
+files:
+  ./.build/nats-streaming-proxy: "/usr/bin/nats-streaming-proxy"
+config_files:
+  ./package/etc/nats-streaming-proxy/environment: "/etc/nats-streaming-proxy/environment"
+  ./package/systemd/nats-streaming-proxy.service: "/etc/systemd/system/nats-streaming-proxy.service"
+overrides:
+  deb:
+    scripts:
+      postinstall: ./package/debian/postinstall.sh
+      preremove: ./package/debian/preremove.sh

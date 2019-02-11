@@ -1,0 +1,19 @@
+[Unit]
+Description=NATS Streaming proxy
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+
+EnvironmentFile=/etc/nats-streaming-proxy/environment
+ExecStart=/usr/bin/nats-streaming-proxy
+
+Restart=always
+RestartSec=2
+
+MemoryLimit=500M
+MemoryAccounting=true
+
+[Install]
+WantedBy=multi-user.target
