@@ -14,6 +14,7 @@ import (
 	"time"
 
 	nats "github.com/nats-io/go-nats-streaming"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -49,6 +50,9 @@ func (conn *connect) serve() {
 	for {
 		switch err := conn.handle(); {
 		case err != nil:
+			if err != io.EOF {
+				log.Errorf("handle %v", err)
+			}
 			return
 		default:
 			if err := conn.buffer.Flush(); err != nil {
@@ -91,7 +95,7 @@ func (conn *connect) handle() error {
 				return err
 			}
 			if !bytes.HasSuffix(value, crlf) {
-				return err
+				return io.EOF
 			}
 			switch err := conn.publish(subject, value[:n]); {
 			case err != nil:
@@ -110,7 +114,9 @@ func (conn *connect) handle() error {
 			fmt.Fprintf(conn.buffer, StatPattern, "cmd_set", atomic.LoadInt64(&reqProcessed))
 			fmt.Fprintf(conn.buffer, StatPattern, "curr_connections", atomic.LoadInt64(&currentConnections))
 			fmt.Fprintf(conn.buffer, StatPattern, "total_connections", atomic.LoadInt64(&totalConnections))
-			conn.buffer.Write(StatusEnd)
+			{
+				conn.buffer.Write(StatusEnd)
+			}
 		}
 	case 'v': // version
 		conn.net.Write([]byte("VERSION " + conn.version + "\r\n"))
