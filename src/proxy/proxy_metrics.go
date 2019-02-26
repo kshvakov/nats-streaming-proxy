@@ -23,10 +23,14 @@ var (
 		Name: "nats_streaming_proxy_uptime",
 		Help: "Server uptime in seconds.",
 	})
-	reqProcessedProm = promauto.NewCounter(prometheus.CounterOpts{
+	reqProcessedProm = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "nats_streaming_proxy_requests_total",
 		Help: "The total number of processed requests",
-	})
+	}, []string{"subject"})
+	reqFailedProm = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_streaming_proxy_failed_requests_total",
+		Help: "The total number of failed requests",
+	}, []string{"subject"})
 	totalConnectionsProm = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "nats_streaming_proxy_total_connections",
 		Help: "The number of total connections",
@@ -37,8 +41,8 @@ var (
 	}, []string{"address"})
 )
 
-func reqProcessedInc() {
-	reqProcessedProm.Inc()
+func reqProcessedInc(subject string) {
+	reqProcessedProm.WithLabelValues(subject).Inc()
 	atomic.AddInt64(&reqProcessed, 1)
 }
 

@@ -100,9 +100,14 @@ func (conn *connect) handle() error {
 			switch err := conn.publish(subject, value[:n]); {
 			case err != nil:
 				conn.net.Write(StatusNotStored)
+				{
+					reqFailedProm.WithLabelValues(subject).Inc()
+				}
 			default:
 				conn.net.Write(StatusStored)
-				reqProcessedInc()
+				{
+					reqProcessedInc(subject)
+				}
 			}
 		case 't': // stats
 			fmt.Fprintf(conn.buffer, StatPattern, "pid", os.Getpid())
