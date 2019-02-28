@@ -14,7 +14,7 @@ var (
 	GitBranch, GitCommit string
 )
 
-const version = "1.0.2"
+const version = "1.1.0"
 
 func init() {
 	log.SetFormatter(&log.TextFormatter{})

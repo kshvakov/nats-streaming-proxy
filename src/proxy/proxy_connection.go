@@ -91,13 +91,15 @@ func (conn *connect) handle() error {
 				value     = make([]byte, length+2)
 				n, err    = conn.buffer.Read(value)
 			)
-			if err != nil && err != io.EOF {
+			switch {
+			case err != nil && err != io.EOF:
 				return err
-			}
-			if !bytes.HasSuffix(value, crlf) {
+			case !bytes.HasSuffix(value, crlf):
+				return io.EOF
+			case n != length+2: // bad chunk
 				return io.EOF
 			}
-			switch err := conn.publish(subject, value[:n]); {
+			switch err := conn.publish(subject, value[:length]); {
 			case err != nil:
 				conn.net.Write(StatusNotStored)
 				{
